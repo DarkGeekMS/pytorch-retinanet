@@ -101,3 +101,8 @@ ENV/
 
 *.zip
 *.pt
+
+# folders
+cls_list/
+detections/
+samples/

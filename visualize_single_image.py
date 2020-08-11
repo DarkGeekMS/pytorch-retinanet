@@ -6,6 +6,7 @@ import csv
 import cv2
 import argparse
 
+from retinanet import model
 
 def load_classes(csv_reader):
     result = {}
@@ -41,13 +42,14 @@ def detect_image(image_path, model_path, class_list):
     for key, value in classes.items():
         labels[value] = key
 
-    model = torch.load(model_path)
+    retinanet = model.resnet50(num_classes=80)
+    retinanet.load_state_dict(torch.load(model_path))
 
     if torch.cuda.is_available():
-        model = model.cuda()
+        retinanet = retinanet.cuda()
 
-    model.training = False
-    model.eval()
+    retinanet.training = False
+    retinanet.eval()
 
     for img_name in os.listdir(image_path):
 
@@ -96,7 +98,7 @@ def detect_image(image_path, model_path, class_list):
 
             st = time.time()
             print(image.shape, image_orig.shape, scale)
-            scores, classification, transformed_anchors = model(image.cuda().float())
+            scores, classification, transformed_anchors = retinanet(image.cuda().float())
             print('Elapsed time: {}'.format(time.time() - st))
             idxs = np.where(scores.cpu() > 0.5)
 
@@ -115,8 +117,7 @@ def detect_image(image_path, model_path, class_list):
                 draw_caption(image_orig, (x1, y1, x2, y2), caption)
                 cv2.rectangle(image_orig, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
 
-            cv2.imshow('detections', image_orig)
-            cv2.waitKey(0)
+            cv2.imwrite('detections/'+img_name, image_orig)
 
 
 if __name__ == '__main__':
